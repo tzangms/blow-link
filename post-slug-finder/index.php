@@ -48,13 +48,14 @@ function post_slug_finder() {
 		  'numberposts' => 1
 		);
 		$my_posts = get_posts($args);
-		if( $my_posts ) {
+		if($my_posts) {
 		  $permalink = get_permalink($my_posts[0]->ID);
 		  wp_redirect($permalink, 301);
 		  exit;
 		}
 
-		wp_redirect(get_bloginfo('wpurl'),301);
+		// redirect to index page, if nothing found
+		wp_redirect(get_bloginfo('wpurl'), 301);
 		exit;
   	}
 }
