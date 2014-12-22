@@ -6,8 +6,8 @@ Plugin URI: http://tzangms.com/
 Description: Find the right post from url
 Author: tzangms
 Author URI: http://tzangms.com/
-Version: 0.1
-Stable tag: 0.1
+Version: 0.2
+Stable tag: 0.2
 License: MIT License
 
 License:
@@ -34,27 +34,52 @@ THE SOFTWARE.
 */
 
 function post_slug_finder() {
-	global $wp_query;
-	
-	$the_slug = $_SERVER['REQUEST_URI'];
+	/*
+	Allow URL Format:
 
-	// TODO: handle slug for various situation
+	1. /<post_id>-<slug>/
+	2. /<post_id>/
+	3. /<slug>/
+	
+	*/
+	global $wp_query;
+	$post_id = null;
 
 	if ($wp_query->is_404) {
-		$args = array(
-		  'name' => $the_slug,
-		  'post_type' => 'post',
-		  'post_status' => 'publish',
-		  'numberposts' => 1
-		);
-		$my_posts = get_posts($args);
-		if($my_posts) {
-		  $permalink = get_permalink($my_posts[0]->ID);
+
+ 		$url = parse_url($_SERVER['REQUEST_URI']);
+	    $the_slug = end(explode('/', rtrim($url['path'], '/')));
+
+	    if (preg_match('/^(\d+)-(.*)/', $the_slug, $matches)) {
+		    $post_id = $matches[1];
+		    $the_slug = $matches[2];
+	    } else if (preg_match('/^(\d+)/', $the_slug, $matches)) {
+	    	$post_id = $matches[1];
+	    }
+
+		// query post by post_id, and then slug
+		if (!is_null($post_id)) {
+			$args['post_id'] = $post_id;
+			$post = get_post($post_id);
+		} else {
+			$args = array(
+			  'post_type' => 'post',
+			  'post_status' => 'publish',
+			  'numberposts' => 1,
+			  'name' => $the_slug,
+			);
+			$posts = get_posts($args);
+			if ($posts) {
+				$post = $posts[0];
+			}
+		}
+
+		if($post) {
+		  $permalink = get_permalink($post->ID);
 		  wp_redirect($permalink, 301);
 		  exit;
 		}
 
-		// redirect to index page, if nothing found
 		wp_redirect(get_bloginfo('wpurl'), 301);
 		exit;
   	}
